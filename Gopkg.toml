@@ -3,5 +3,5 @@
   unused-packages = true
 
 [[constraint]]
-  name = "github.com/valyala/fasthttp"
+  name = "github.com/gorilla/mux"
   branch = "master"

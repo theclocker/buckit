@@ -1,0 +1,14 @@
+name: openweathermap
+limits:
+  calls: 60
+  frame: 1mi
+credentials:
+  default:
+    secret: "b3a19ba20721ced3661701c4d98a1bc9"
+  sample:
+    secret: "b6907d289e10d714a6e88b30761fae22"
+routes:
+  5day3hour:
+    path: "https://openweathermap.org/data/2.5/forecast"
+    method: GET
+    block: false

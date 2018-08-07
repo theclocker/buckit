@@ -1,0 +1,8 @@
+name: ip-api
+credentials:
+  default:
+    secret:
+      value: "b3a19ba20721ced3661701c4d98a1bc9"
+routes:
+  json:
+    method: GET
