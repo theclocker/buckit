@@ -15,7 +15,11 @@ var serveCmd = &cobra.Command{
 		"s",
 	},
 	Short: "Serve the app's web interface and REST Api",
-	Run:   serverCommandHandler,
+	Run: serverCommandHandler,
+}
+
+func init() {
+	RootCmd.AddCommand(serveCmd)
 }
 
 func serverCommandHandler(cmd *cobra.Command, args []string) {
@@ -24,9 +28,11 @@ func serverCommandHandler(cmd *cobra.Command, args []string) {
 	r.Path(fmt.Sprintf("/a/bulk/%s", apiRouteMatch)).HandlerFunc(DevHandler)
 	r.Path(fmt.Sprintf("/a/single/%s", apiRouteMatch)).HandlerFunc(ApiHandler)
 	r.Path(fmt.Sprintf("/%s", apiRouteMatch)).HandlerFunc(DevHandler)
-	if err := http.ListenAndServe(":8080", r); err != nil {
-		log.Fatalf("Error in ListenAndServe: %s", err)
-	}
+	go func(){
+		log.Println(http.ListenAndServe(":8080", r))
+	}()
+	fmt.Println("Serving app on port 8080, See docs for routes and usage")
+	select {}
 }
 
 func ApiHandler(w http.ResponseWriter, r *http.Request) {

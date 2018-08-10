@@ -1,8 +1,8 @@
 name: ip-api
 credentials:
   default:
-    secret:
-      value: "b3a19ba20721ced3661701c4d98a1bc9"
-routes:
+    secret: "b3a19ba20721ced3661701c4d98a1bc9"
+endpoints:
   json:
+    path: "http://ip-api.com/"
     method: GET

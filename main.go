@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/theclocker/api_manager/cmd"
+	"github.com/theclocker/buckit/cmd"
 )
 
 func main() {
