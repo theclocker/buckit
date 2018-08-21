@@ -3,9 +3,11 @@ version: "3"
 services:
   app:
     build: .
-    working_dir: /go/src/app
+    stdin_open: true
+    tty: true
     volumes:
-      - .:/go/src/app
-    ports:
-      - 80:3000
+      - .:/go/src/github.com/theclocker/buckit
+#    working_dir: /go/src/github.com/theclocker/buckit
+#    ports:
+#      - 80:3000
     #command: ["gin","--appPort","8080","run","main.go"]

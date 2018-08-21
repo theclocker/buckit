@@ -1,8 +1,8 @@
 name: ip-api
-credentials:
-  default:
-    secret: "b3a19ba20721ced3661701c4d98a1bc9"
+limits:
+  calls: 149
+  frame: 60
 endpoints:
   json:
-    path: "http://ip-api.com/"
+    path: "http://ip-api.com/json"
     method: GET

@@ -1,7 +1,7 @@
 name: openweathermap
 limits:
   calls: 60
-  frame: 1mi
+  frame: 60
 credentials:
   default:
     secret: "b3a19ba20721ced3661701c4d98a1bc9"
@@ -9,6 +9,20 @@ credentials:
     secret: "b6907d289e10d714a6e88b30761fae22"
 endpoints:
   5day3hour:
-    path: "https://openweathermap.org/data/2.5/forecast"
+    path: "https://api.openweathermap.org/data/2.5/forecast"
     method: GET
     block: false
+    parameters:
+      appid:
+        type: credentials
+        value: secret
+  current:
+    path: "https://api.openweathermap.org/data/2.5/weather"
+    method: GET
+    block: false
+    parameters:
+      appid:
+        type: credentials
+        value: secret
+      q:
+        type: input
