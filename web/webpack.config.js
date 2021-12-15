@@ -4,7 +4,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-    entry: './src/index.jsx',
+    entry: './src/paths/index.jsx',
     mode: process.env.WEBPACK_SERVE ? 'development' : 'production',
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -13,14 +13,15 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.(js|jsx)$/,
+                test: /\.(js|jsx)$/i,
                 loader: 'babel-loader'
             },
             {
-                test: /\.(scss|sass)$/,
+                test: /\.(scss|sass)$/i,
                 use: [
                     // fallback to style-loader in development
-                    process.env.NODE_ENV !== 'production' ? 'style-loader' : MiniCssExtractPlugin.loader,
+                    process.env.NODE_ENV === 'development' ? 'style-loader' : MiniCssExtractPlugin.loader,
+                    // "style-loader",
                     "css-loader",
                     "sass-loader"
                 ]
@@ -53,6 +54,7 @@ module.exports = {
     resolve: {
         extensions: ['.js', '.jsx'],
         alias: {
+            Src: path.resolve(__dirname, 'src'),
             Components: path.resolve(__dirname, 'src/components/'),
             Paths: path.resolve(__dirname, 'src/paths/')
         }

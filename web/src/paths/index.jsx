@@ -1,7 +1,9 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import Menu from "Components/navigation/menu";
+import 'Src/style.scss';
 
-export default class Index extends React.Component {
+class Index extends React.Component {
     render() {
         return (
             <div>
@@ -17,3 +19,5 @@ export default class Index extends React.Component {
         );
     }
 }
+
+ReactDOM.render(<Index/>, document.getElementById('app'));

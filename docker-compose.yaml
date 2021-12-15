@@ -1,13 +1,17 @@
 version: "3"
 
 services:
-  app:
-    build: .
-    stdin_open: true
-    tty: true
+  main:
+    build:
+      dockerfile: ./.docker/Dockerfile
+      context: ./
+    container_name: buckit
     volumes:
-      - .:/go/src/github.com/theclocker/buckit
-#    working_dir: /go/src/github.com/theclocker/buckit
-#    ports:
-#      - 80:3000
-    #command: ["gin","--appPort","8080","run","main.go"]
+      - ./service:/service
+      - ./web:/web
+    ports:
+      - "80:8080"
+      - "3001:3001"
+    networks:
+      - backend
+    command: gin -i -a 3000 -p 8080 -b ./out/gin-bin run .

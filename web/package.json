@@ -1,0 +1,36 @@
+{
+  "name": "buckit-web",
+  "version": "1.0.0",
+  "description": "The UI for Buckit",
+  "main": "webpack.config.js",
+  "scripts": {
+    "serve": "webpack serve",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.16.5",
+    "@babel/preset-react": "^7.16.5",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.2.3",
+    "css-loader": "^6.5.1",
+    "html-loader": "^3.0.1",
+    "sass-loader": "^12.4.0",
+    "html-webpack-plugin": "^5.5.0",
+    "mini-css-extract-plugin": "^2.4.5",
+    "style-loader": "^3.3.1",
+    "tailwindcss": "^3.0.5",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.6.0",
+    "bulma": "^0.9.3",
+    "node-sass": "^7.0.0"
+  },
+  "dependencies": {
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-router": "^6.1.1",
+    "react-router-dom": "^6.1.1"
+  },
+  "author": "Yonatan Vega",
+  "license": "ISC"
+}
