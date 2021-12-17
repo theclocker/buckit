@@ -1,4 +1,4 @@
-module theclocker/buckit
+module service
 
 go 1.17
 

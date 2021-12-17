@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/theclocker/buckit/api"
 	"log"
+	"service/api"
 )
 
 var (

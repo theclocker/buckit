@@ -1,7 +1,7 @@
-package service
+package main
 
 import (
-	"theclocker/buckit/cmd"
+	"service/cmd"
 )
 
 func main() {

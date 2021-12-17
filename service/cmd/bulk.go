@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"log"
-	"theclocker/buckit/api"
+	"service/api"
 )
 
 var (

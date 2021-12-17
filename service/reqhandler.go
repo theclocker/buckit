@@ -1,4 +1,4 @@
-package service
+package main
 
 func GetConfig(api string) {
 

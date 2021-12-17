@@ -3,15 +3,28 @@ version: "3"
 services:
   main:
     build:
-      dockerfile: ./.docker/Dockerfile
+      dockerfile: .docker/service/Dockerfile
       context: ./
-    container_name: buckit
+    container_name: buckit_service
+    tty: true # Keep the container alive, enter with docker-compose exec main bash
     volumes:
       - ./service:/service
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+#    command: gin -i -a 3000 -p 8080 -b ./out/gin-bin run .
+
+  web:
+    build:
+      dockerfile: .docker/web/Dockerfile
+      context: ./
+    container_name: buckit_web
+    volumes:
       - ./web:/web
     ports:
       - "80:8080"
-      - "3001:3001"
-    networks:
-      - backend
-    command: gin -i -a 3000 -p 8080 -b ./out/gin-bin run .
+    command: npm run serve
+
+networks:
+  backend:
