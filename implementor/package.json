@@ -1,0 +1,17 @@
+{
+  "name": "implementor",
+  "version": "1.0.0",
+  "description": "An express app that acts as a service tester for testing various types of the api requests implemented",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yonatan Vega",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.2",
+    "faker": "^5.5.3",
+    "jest": "^27.4.5",
+    "sinon": "^12.0.1"
+  }
+}

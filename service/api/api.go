@@ -1,14 +1,17 @@
 package api
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"math"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -45,11 +48,21 @@ type Credential struct {
 }
 
 type Response struct {
-	Method     string
-	Endpoint   string
-	Status     int
-	Parameters map[string]string
-	Value      interface{}
+	Method     		  string
+	Endpoint   		  string
+	Status     		  int
+	Parameters 		  map[string]string
+	Value      		  interface{}
+	RawValue   		  []byte
+	DNSStart   		  time.Time
+	DNSDone    		  time.Duration
+	TLSHandshakeStart time.Time
+	TLSHandshakeDone  time.Duration
+	ConnectStart	  time.Time
+	ConnectDone		  time.Duration
+	GotFirstResByte	  time.Time
+	ExactStartTime	  time.Time
+	TotalTime		  time.Duration
 }
 
 var configs = make(map[string]Api)
@@ -84,35 +97,30 @@ func GetApiConfig(name string) (*Api, error) {
 	return &config, nil
 }
 
-// Call the api endpoint with the GET http method,
+// CallWGet Calls the api endpoint with the GET http method,
 // the function accepts a credentials name, and an arguments map
 func (i *Api) CallWGet(endpoint string, credentials string, args map[string]string) (Response, error) {
 	creds := i.Credentials[credentials]
 	endp := i.Endpoints[endpoint]
+	result := Response {
+		Method:     "GET",
+		Endpoint:   endp.Path,
+		Parameters: args,
+	}
 	if endp.Method == "GET" {
 		endp.prepGetCredentials(creds)
 		endp.addGetParams(args)
-		resp, _ := http.Get(endp.Path)
-		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
-		var jsonResp interface{}
-		if err := json.Unmarshal(body, &jsonResp); err != nil {
-			return Response{}, err
-		}
-		return Response{
-			Method:     "GET",
-			Endpoint:   endp.Path,
-			Status:     resp.StatusCode,
-			Parameters: args,
-			Value:      jsonResp,
-		}, nil
+		result.Endpoint = endp.Path
+		request := endp.createRequestWithContext(&result)
+		endp.makeRoundTrip(request, &result)
+		return result, nil
 	}
 	return Response{}, errors.New("could not resolve API endpoint method")
 }
 
 func (i *Api) BulkCallWGet(endpoint string, credentials string, argsArr []map[string]string) <-chan Response {
 	results := make(chan Response, len(argsArr))
-	// concurrently go though the bulk
+	// concurrently go through the bulk
 	go func() {
 		// for each argument map
 		for _, arg := range argsArr {
@@ -121,31 +129,79 @@ func (i *Api) BulkCallWGet(endpoint string, credentials string, argsArr []map[st
 				// generate a new timer
 				nanoDur := i.Limits.NextCall.Sub(time.Now())
 				timer := time.NewTimer(nanoDur)
+				// Wait for the timer channel to send a message to the goroutine
 				<-timer.C
 			}
-			// register the call
+			// Register the current call so the limiter knows when to make the next one
 			i.Limits.registerCall()
-			go func() {
-				res, _ := i.CallWGet(endpoint, credentials, arg)
+			go func(query map[string]string) {
+				res, _ := i.CallWGet(endpoint, credentials, query)
 				results <- res
-			}()
+			}(arg)
 		}
 	}()
 	return results
 }
 
+func (e *Endpoint) createRequestWithContext(resp *Response) *http.Request {
+	req, _ := http.NewRequest(e.Method, e.Path, nil)
+	trace := &httptrace.ClientTrace{
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			resp.DNSStart = time.Now()
+		},
+		DNSDone: func(info httptrace.DNSDoneInfo) {
+			resp.DNSDone = time.Since(resp.DNSStart)
+		},
+		TLSHandshakeStart: func() {
+			resp.TLSHandshakeStart = time.Now()
+		},
+		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+			resp.TLSHandshakeDone = time.Since(resp.TLSHandshakeStart)
+		},
+		ConnectStart: func(network, addr string) {
+			resp.ConnectStart = time.Now()
+		},
+		ConnectDone: func(network, addr string, err error) {
+			resp.ConnectDone = time.Since(resp.ConnectStart)
+		},
+		GotFirstResponseByte: func() {
+			resp.GotFirstResByte = time.Now()
+		},
+	}
+	return req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+}
+
+// makeRoundTrip Makes a call to the endpoint given a request and response
+// objects, it uses a prepared request object to make the call and a response
+// object to store the information about the request
+func (e *Endpoint) makeRoundTrip(request *http.Request, response *Response) {
+	response.ExactStartTime = time.Now()
+	if netResp, err := http.DefaultTransport.RoundTrip(request); err != nil {
+		log.Fatal(err)
+	} else {
+		defer netResp.Body.Close()
+		body, _ := ioutil.ReadAll(netResp.Body)
+		var jsonResp interface{}
+		if err := json.Unmarshal(body, &jsonResp); err != nil {
+			log.Fatal(err)
+		}
+		response.Status = netResp.StatusCode
+		response.Value = jsonResp
+		response.RawValue = body
+	}
+	response.TotalTime = time.Since(response.ExactStartTime)
+}
+
 func (e *Endpoint) prepGetCredentials(cred Credential) {
 	args := make(map[string]string)
 	for name, param := range e.Parameters {
-		if param.Type != "input" {
-			switch param.Type {
+		switch param.Type {
 			case "credentials":
 				if param.Value == "secret" {
 					args[name] = cred.Secret
 				} else if param.Value == "public" {
 					args[name] = cred.Public
 				}
-			}
 		}
 	}
 	// Add key to request
@@ -187,19 +243,27 @@ func (l *Limits) MillisecondsBetweenCalls() float64 {
 	return milliseconds
 }
 
-func GetArgumentsFromSlice(params []string) map[string]string {
-	var arguments = make(map[string]string)
+func GetArgumentsFromSlice(params []string) []map[string]string {
+	var arguments = make([]map[string]string, len(params))
 	if params != nil {
-		for _, val := range params {
+		for i, val := range params {
 			// Key, Value
-			kv := strings.SplitN(val, ":", 2)
-			arguments[kv[0]] = kv[1]
+			// kv := strings.SplitN(val, ":", 2)
+			var paramMap map[string]string
+			if err := json.Unmarshal([]byte(val), &paramMap); err != nil {
+				panic(err)
+			}
+			arguments[i] = paramMap
+			// arguments[kv[0]] = kv[1]
 		}
 	}
 	return arguments
 }
 
-func (r *Response) Print() string {
+// Print prints outs the response struct with the status code and the endpoint
+// you can also pass a boolean value to print the value returned from the api or not
+// make sure to mark verbose as false in production environments
+func (r *Response) Print(verbose bool) string {
 	var outputColor color.Attribute
 	switch {
 	case r.Status >= 200 && r.Status < 300:
@@ -212,6 +276,19 @@ func (r *Response) Print() string {
 		outputColor = color.FgRed
 		break
 	}
-	colorSprintf := color.New(outputColor).SprintfFunc()
-	return fmt.Sprintf("%s %s", colorSprintf("[%s:%d]", r.Method, r.Status), r.Endpoint)
+	statusColorSprintf := color.New(outputColor).SprintfFunc()
+	durationColorSprintf := color.New(color.BgBlack, color.FgWhite).SprintfFunc()
+	var printArr []interface{}
+	printFormat := "%s %s %s"
+	printArr = append(
+		printArr,
+		statusColorSprintf("[%s:%d]", r.Method, r.Status),
+		durationColorSprintf("%s", r.TotalTime),
+		r.Endpoint,
+	)
+	if verbose {
+		printFormat += "\n%s"
+		printArr = append(printArr, r.RawValue)
+	}
+	return fmt.Sprintf(printFormat, printArr...)
 }

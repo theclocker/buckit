@@ -10,6 +10,7 @@ import (
 var (
 	SingleCredentials string
 	SingleParams      []string
+	Verbose			  bool
 )
 
 var callCmd = &cobra.Command{
@@ -19,36 +20,19 @@ var callCmd = &cobra.Command{
 	Run:   callHandler,
 }
 
+func init() {
+	addCredsFlag(callCmd, &SingleCredentials)
+	addParamsFlag(callCmd, &SingleParams)
+	addVerboseFlag(callCmd, &Verbose)
+	RootCmd.AddCommand(callCmd)
+}
+
 func callHandler(cmd *cobra.Command, args []string) {
 	config, err := api.GetApiConfig(args[0])
 	if err != nil {
 		log.Fatal(err)
 	}
 	arguments := api.GetArgumentsFromSlice(SingleParams)
-	res, err := config.CallWGet(args[1], SingleCredentials, arguments)
-	fmt.Println(res.Print())
-}
-
-func addCredsFlag(cmd *cobra.Command, credsVar *string) {
-	cmd.Flags().StringVarP(
-		credsVar,
-		"credentials",
-		"c",
-		"default",
-		"Which credentials should the call use")
-}
-
-func addParamsFlag(cmd *cobra.Command, paramsVar *[]string) {
-	cmd.Flags().StringArrayVarP(
-		paramsVar,
-		"parameters",
-		"p",
-		[]string{},
-		"Takes in a json object and uses it as api call parameters")
-}
-
-func init() {
-	addCredsFlag(callCmd, &SingleCredentials)
-	addParamsFlag(callCmd, &SingleParams)
-	RootCmd.AddCommand(callCmd)
+	res, err := config.CallWGet(args[1], SingleCredentials, arguments[0])
+	fmt.Println(res.Print(Verbose))
 }

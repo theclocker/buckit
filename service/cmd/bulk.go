@@ -10,6 +10,7 @@ import (
 var (
 	BulkParams      []string
 	BulkCredentials string
+	BulkVerbose			bool
 )
 
 var bulkCmd = &cobra.Command{
@@ -19,26 +20,22 @@ var bulkCmd = &cobra.Command{
 	Run:   bulkHandler,
 }
 
-func bulkHandler(cmd *cobra.Command, args []string) {
+func init() {
+	addCredsFlag(bulkCmd, &BulkCredentials)
+	addParamsFlag(bulkCmd, &BulkParams)
+	addVerboseFlag(bulkCmd, &BulkVerbose)
+	RootCmd.AddCommand(bulkCmd)
+}
+
+func bulkHandler(_ *cobra.Command, args []string) {
 	config, err := api.GetApiConfig(args[0])
 	if err != nil {
 		log.Fatal(err)
 	}
 	arguments := api.GetArgumentsFromSlice(BulkParams)
-	paramsArr := []map[string]string{
-		arguments,
-		arguments,
-		arguments,
-	}
-	resChan := config.BulkCallWGet(args[1], BulkCredentials, paramsArr)
-	for a := 0; a < len(paramsArr); a++ {
+	resChan := config.BulkCallWGet(args[1], BulkCredentials, arguments)
+	for a := 0; a < len(arguments); a++ {
 		res := <-resChan
-		fmt.Println(res.Print())
+		fmt.Println(res.Print(BulkVerbose))
 	}
-}
-
-func init() {
-	addCredsFlag(bulkCmd, &BulkCredentials)
-	addParamsFlag(bulkCmd, &BulkParams)
-	RootCmd.AddCommand(bulkCmd)
 }
