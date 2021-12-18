@@ -65,6 +65,8 @@ type Response struct {
 	TotalTime		  time.Duration
 }
 
+type Method string
+
 var configs = make(map[string]Api)
 var loadOnce sync.Once
 
@@ -111,7 +113,7 @@ func (i *Api) CallWGet(endpoint string, credentials string, args map[string]stri
 		endp.prepGetCredentials(creds)
 		endp.addGetParams(args)
 		result.Endpoint = endp.Path
-		request := endp.createRequestWithContext(&result)
+		request := createRequestWithContext(http.MethodGet, endp.Path, &result)
 		endp.makeRoundTrip(request, &result)
 		return result, nil
 	}
@@ -143,9 +145,11 @@ func (i *Api) BulkCallWGet(endpoint string, credentials string, argsArr []map[st
 	return results
 }
 
-func (e *Endpoint) createRequestWithContext(resp *Response) *http.Request {
-	req, _ := http.NewRequest(e.Method, e.Path, nil)
-	trace := &httptrace.ClientTrace{
+// createRequestWithContext takes in a request method, a path and a response object
+// and returns a request object and attaches a client trace struct
+func createRequestWithContext(method string, path string, resp *Response) *http.Request {
+	req, _ := http.NewRequest(method, path, nil)
+	trace := &httptrace.ClientTrace {
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			resp.DNSStart = time.Now()
 		},
